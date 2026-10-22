@@ -3,6 +3,14 @@ Initial dataset inspection: dataset\listings.csv.gz
 Rows: 91,954
 Columns: 90
 
+Data quality overview
+--------------------------------------------------------------------------------
+Cells with missing values: 1,933,263 / 8,275,860 (23.36%)
+Columns with missing values: 51
+Columns with no missing values: 39
+Completely empty columns: 15
+Exact duplicate rows: 0
+
 Column names and data types
 --------------------------------------------------------------------------------
 id                                                int64
@@ -292,8 +300,6 @@ calculated_host_listings_count_entire_homes               0              0.00%
 calculated_host_listings_count_private_rooms              0              0.00%
 calculated_host_listings_count_shared_rooms               0              0.00%
 reviews_per_month                                     20694             22.50%
-
-Exact duplicate rows: 0
 
 Unique values by column (including missing values)
 --------------------------------------------------------------------------------

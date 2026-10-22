@@ -36,6 +36,17 @@ def load_dataset(dataset_path: Path) -> pd.DataFrame:
 
 def build_report(dataset_path: Path, dataframe: pd.DataFrame) -> str:
     missing_counts = dataframe.isna().sum()
+    total_cells = dataframe.size
+    missing_cells = int(missing_counts.sum())
+    missing_percentage = (
+        missing_cells / total_cells * 100 if total_cells else 0.0
+    )
+    columns_with_missing = int(missing_counts.gt(0).sum())
+    complete_columns = int(missing_counts.eq(0).sum())
+    empty_columns = (
+        int(missing_counts.eq(len(dataframe)).sum()) if len(dataframe) else 0
+    )
+    duplicate_rows = int(dataframe.duplicated().sum())
     missing = pd.DataFrame(
         {
             "missing_count": missing_counts,
@@ -54,6 +65,15 @@ def build_report(dataset_path: Path, dataframe: pd.DataFrame) -> str:
         f"Rows: {len(dataframe):,}",
         f"Columns: {len(dataframe.columns):,}",
         "",
+        "Data quality overview",
+        "-" * 80,
+        f"Cells with missing values: {missing_cells:,} / {total_cells:,} "
+        f"({missing_percentage:.2f}%)",
+        f"Columns with missing values: {columns_with_missing:,}",
+        f"Columns with no missing values: {complete_columns:,}",
+        f"Completely empty columns: {empty_columns:,}",
+        f"Exact duplicate rows: {duplicate_rows:,}",
+        "",
         "Column names and data types",
         "-" * 80,
         dataframe.dtypes.to_string(),
@@ -71,8 +91,6 @@ def build_report(dataset_path: Path, dataframe: pd.DataFrame) -> str:
         missing.to_string(
             formatters={"missing_percentage": lambda value: f"{value:.2f}%"}
         ),
-        "",
-        f"Exact duplicate rows: {dataframe.duplicated().sum():,}",
         "",
         "Unique values by column (including missing values)",
         "-" * 80,

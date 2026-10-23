@@ -1,0 +1,86 @@
+Cleaning and missing values: dataset/listings.csv
+================================================================================
+Rows: 77,679 -> 47,695
+Columns: 90 -> 78
+Cells with missing values: 1,520,187 -> 72,099
+
+Steps taken
+--------------------------------------------------------------------------------
+1. Filled 32,340 missing bathrooms from the number in bathrooms_text (e.g. '1.5 baths' -> 1.5).
+2. Dropped 13 completely empty columns, because they hold no information: neighborhood_overview, host_since, host_response_time, host_response_rate, host_acceptance_rate, host_thumbnail_url, host_neighbourhood, host_total_listings_count, host_verifications, neighbourhood, neighbourhood_group_cleansed, calendar_updated, instant_bookable.
+3. Removed 0 duplicate listings (same id).
+4. Converted price from text such as '$1,180.00' to a number. It is the price per night in the local currency; the '$' is only formatting.
+5. Dropped 29,277 rows without a price. Price is the main variable for analysis, so filling it in would invent the values we want to study. Most of these listings have no available days in the next year, so they cannot be booked anyway.
+6. Dropped 225 rows without any host information (host name, superhost status and listing counts were all missing).
+7. Removed 482 outlier rows with a price above the 99th percentile (1,875.72). This removes placeholder prices that block bookings, but also some genuine luxury listings.
+8. Set 3,389 missing bedrooms to 0 for entire homes named as a studio, because Airbnb often leaves bedrooms empty for studios. Some hosts record their studio as 1 bedroom instead, so studios can have either 0 or 1 bedrooms.
+9. Filled 26 missing bathrooms with the median of listings that accommodate the same number of guests.
+10. Filled 4,131 missing bedrooms with the median of listings that accommodate the same number of guests.
+11. Filled 4,121 missing beds with the median of listings that accommodate the same number of guests.
+12. Filled 8,000 missing reviews_per_month with 0, because they belong to listings with no reviews.
+13. Added a has_reviews column (8,000 listings have no reviews). Their review scores are left missing, because filling them in would give unreviewed listings a typical score they never got.
+14. Filled 16 missing has_availability from availability_365: 't' when the listing has any available days in the next year.
+15. Converted the 't'/'f' columns to True/False: host_is_superhost, host_has_profile_pic, host_identity_verified, has_availability.
+16. Stored counts such as bedrooms and beds as whole numbers (1, not 1.0).
+17. Filled missing text: description and host_about with 'No description', host_location and license with 'Unknown'.
+
+Missing values by column, before and after
+--------------------------------------------------------------------------------
+                             missing_before missing_after
+description                           2,829             0
+neighborhood_overview                77,679       dropped
+picture_url                               1             1
+host_profile_id                         260             0
+host_profile_url                        267            53
+host_name                               260             0
+host_since                           77,679       dropped
+hosts_time_as_user_years                260             0
+hosts_time_as_user_months               260             0
+hosts_time_as_host_years                260             0
+hosts_time_as_host_months               260             0
+host_location                        15,912             0
+host_about                           41,899             0
+host_response_time                   77,679       dropped
+host_response_rate                   77,679       dropped
+host_acceptance_rate                 77,679       dropped
+host_is_superhost                       260             0
+host_thumbnail_url                   77,679       dropped
+host_picture_url                        260             0
+host_neighbourhood                   77,679       dropped
+host_listings_count                     260             0
+host_total_listings_count            77,679       dropped
+host_verifications                   77,679       dropped
+host_has_profile_pic                    260             0
+host_identity_verified                  260             0
+neighbourhood                        77,679       dropped
+neighbourhood_group_cleansed         77,679       dropped
+bathrooms                            32,371             0
+bathrooms_text                           50            45
+bedrooms                             13,956             0
+beds                                 30,816             0
+price                                29,277             0
+price_quote_checkin_date             25,869             0
+price_quote_checkout_date            25,869             0
+price_quote_total_price              29,277             0
+price_quote_price_per_night          29,277             0
+price_quote_raw                      25,869             0
+calendar_updated                     77,679       dropped
+has_availability                      1,419             0
+estimated_revenue_l365d              29,277             0
+first_review                         15,898         8,000
+last_review                          15,898         8,000
+review_scores_rating                 15,898         8,000
+review_scores_accuracy               15,903         8,000
+review_scores_cleanliness            15,901         8,000
+review_scores_checkin                15,907         8,000
+review_scores_communication          15,904         8,000
+review_scores_location               15,907         8,000
+review_scores_value                  15,908         8,000
+license                              14,243             0
+instant_bookable                     77,679       dropped
+reviews_per_month                    15,898             0
+
+Columns still with missing values
+--------------------------------------------------------------------------------
+picture_url, host_profile_url, bathrooms_text, first_review, last_review, review_scores_rating, review_scores_accuracy, review_scores_cleanliness, review_scores_checkin, review_scores_communication, review_scores_location, review_scores_value
+These are left missing on purpose: first_review, last_review and the review scores have no value when a listing has no reviews.

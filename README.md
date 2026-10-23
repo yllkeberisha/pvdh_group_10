@@ -48,3 +48,16 @@ python scripts\inspect_listings.py dataset\listings.csv --report reports\my_insp
 ```
 
 The input dataset is only read; the script does not modify it.
+
+## Clean
+
+Clean the dataset and handle its missing values:
+
+```powershell
+python scripts\clean_listings.py dataset\listings.csv
+```
+
+The cleaned dataset is saved to `dataset/listings_clean.csv` and a report of
+every step, with missing values per column before and after, is saved to
+`reports/listings_cleaning.txt`. Choose other locations with `--output` and
+`--report`.

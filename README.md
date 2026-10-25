@@ -1,63 +1,33 @@
-# London Airbnb Listings Exploration
+# London Airbnb Listings · Para-procesimi (Pjesa I)
 
-This project provides a read-only initial inspection of the London listings
-dataset from Inside Airbnb. It reports the dataset shape, column names and
-types, first five rows, descriptive statistics, missing values, exact duplicate
-rows, and unique-value counts. It does not clean or transform the data.
+Ky projekt analizon si ndryshon çmimi për natë i listimeve Airbnb në Londër sipas llojit të dhomës, lagjes dhe kapacitetit. Burimi i deklaruar është Inside Airbnb; një rresht përfaqëson një listim. Dataset-i lokal është `dataset/listings.csv.gz` (nuk ruhet në Git). Para dorëzimit, shtoni në raport datën dhe lidhjen e saktë të shkarkimit të versionit që përdorni.
 
-## Project layout
+## Notebook-et
 
-```text
-.
-├── dataset/
-│   └── listings.csv.gz
-├── reports/
-│   └── listings_inspection.txt
-├── scripts/
-│   └── inspect_listings.py
-├── requirements.txt
-└── README.md
-```
+1. [`notebooks/01_inspektimi_dhe_kualiteti.ipynb`](notebooks/01_inspektimi_dhe_kualiteti.ipynb) — mbledhja dhe kuptimi i të dhënave, tipet, kualiteti, mungesat, dublikatat, agregimi dhe mostrimi.
+2. [`notebooks/02_pastrimi_dhe_transformimi.ipynb`](notebooks/02_pastrimi_dhe_transformimi.ipynb) — pastrimi, strategjia për mungesat, vlerat ekstreme, zgjedhja/krijimi i vetive, diskretizimi, binarizimi, transformimi dhe krahasimi para/pas.
 
-## Setup
+Çdo notebook ka shpjegime në shqip dhe kode që mund të ekzekutohen qelizë pas qelize. Grafikët shfaqen brenda notebook-ut kur ekzekutohen qelizat; nuk ruhen si skedarë imazhi. Rezultatet kryesore të ekzekutimit aktual janë te [`reports/preprocessing_summary.md`](reports/preprocessing_summary.md).
 
-Use Python 3.10 or newer. From the project root, create and activate a virtual
-environment in PowerShell, then install the dependencies:
+## Nisja
+
+Nga rrënja e projektit, me Python 3.10 ose më të ri:
 
 ```powershell
 py -3 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
+python -m jupyter lab
 ```
 
-## Run
+Hapni notebook-et sipas rendit dhe zgjidhni kernel-in e mjedisit `.venv`. Ato gjejnë automatikisht `dataset/` kur kernel-i nis nga rrënja e projektit ose nga dosja `notebooks/`. Notebook-u 02 krijon `dataset/listings_preprocessed.csv`, i cili përjashtohet nga Git. Dataset-i origjinal nuk ndryshohet.
 
-Pass the path to an uncompressed CSV or a gzip-compressed `.csv.gz` file:
+Skriptet ekzistuese në `scripts/` mbeten si rrjedhë alternative. Raporti i vjetër `reports/listings_cleaning.txt` u krijua nga një version tjetër i dataset-it (77,679 rreshta), ndaj **mos i përdorni numrat e tij** për versionin aktual me 91,954 rreshta. Për rezultatet e kësaj pjese përdorni notebook-et dhe `reports/preprocessing_summary.md`.
 
-```powershell
-python scripts\inspect_listings.py dataset\listings.csv.gz
-python scripts\inspect_listings.py path\to\listings.csv.gz
-```
+## Kufizime të metodës
 
-The report is printed to the console and saved by default to
-`reports/listings_inspection.txt`. Choose another report location with
-`--report`:
-
-```powershell
-python scripts\inspect_listings.py dataset\listings.csv --report reports\my_inspection.txt
-```
-
-The input dataset is only read; the script does not modify it.
-
-## Clean
-
-Clean the dataset and handle its missing values:
-
-```powershell
-python scripts\clean_listings.py dataset\listings.csv
-```
-
-The cleaned dataset is saved to `dataset/listings_clean.csv` and a report of
-every step, with missing values per column before and after, is saved to
-`reports/listings_cleaning.txt`. Choose other locations with `--output` and
-`--report`.
+- Rreshtat pa çmim largohen sepse çmimi është variabla kryesore; analiza e çmimit përfaqëson vetëm listimet me çmim të njohur.
+- Vlerat e `bathrooms`, `bedrooms` dhe `beds` që mbeten bosh plotësohen me medianë sipas kapacitetit. Këto janë vlerësime, jo matje origjinale.
+- Çmimet mbi percentilin 99 vetëm shënohen, nuk fshihen; mund të përfshijnë listime të vërteta luksoze.
+- `price_band` është krijuar nga çmimi. Nuk duhet përdorur si hyrje për një model që parashikon çmimin.
+- `review_scores_rating` mbetet bosh për listimet pa vlerësim. Kjo mungesë ka kuptim dhe nuk plotësohet artificialisht.

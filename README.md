@@ -13,12 +13,25 @@ Ky projekt analizon si ndryshon çmimi për natë i listimeve Airbnb në Londër
 
 Nga rrënja e projektit, me Python 3.10 ose më të ri:
 
+Windows (PowerShell):
+
 ```powershell
 py -3 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 python -m jupyter lab
 ```
+
+Linux / macOS (bash ose zsh):
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m jupyter lab
+```
+
+Vendosni dataset-in origjinal te `dataset/listings.csv.gz` para ekzekutimit. Ky skedar nuk përfshihet në Git. Komandat përdorin rrugë relative nga rrënja e projektit.
 
 Hapni notebook-et sipas rendit dhe zgjidhni kernel-in e mjedisit `.venv`. Ato gjejnë automatikisht `dataset/` kur kernel-i nis nga rrënja e projektit ose nga dosja `notebooks/`. Notebook-u 02 krijon `dataset/listings_preprocessed.csv`, i cili përjashtohet nga Git. Dataset-i origjinal nuk ndryshohet.
 

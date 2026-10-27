@@ -26,12 +26,6 @@ INTEGER_COLUMNS = [
     "hosts_time_as_host_years",
     "hosts_time_as_host_months",
 ]
-TEXT_FILL_VALUES = {
-    "description": "No description",
-    "host_about": "No description",
-    "host_location": "Unknown",
-    "license": "Unknown",
-}
 
 
 def parse_args() -> argparse.Namespace:
@@ -59,11 +53,13 @@ def parse_args() -> argparse.Namespace:
 
 
 def bathrooms_from_text(bathrooms_text: pd.Series) -> pd.Series:
-    """Read the number from text such as '1.5 shared baths'; 'Half-bath' is 0.5."""
+    """Read the number from text such as '1.5 shared baths'; 'Half-bath' is 0.5 and
+    'No bathroom' is 0."""
     text = bathrooms_text.astype("string")
     numbers = text.str.extract(r"(\d+(?:\.\d+)?)")[0].astype(float)
     half_bath = text.str.contains("half", case=False, na=False)
-    return numbers.mask(numbers.isna() & half_bath, 0.5)
+    no_bath = text.str.contains(r"^no bath", case=False, na=False)
+    return numbers.mask(numbers.isna() & half_bath, 0.5).mask(numbers.isna() & no_bath, 0.0)
 
 
 def clean_dataset(dataframe: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
@@ -71,18 +67,15 @@ def clean_dataset(dataframe: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     df = dataframe.copy()
     steps = []
 
-    missing_bathrooms = int(df["bathrooms"].isna().sum())
-    df["bathrooms"] = df["bathrooms"].fillna(bathrooms_from_text(df["bathrooms_text"]))
-    steps.append(
-        f"Filled {missing_bathrooms - int(df['bathrooms'].isna().sum()):,} missing "
-        "bathrooms from the number in bathrooms_text (e.g. '1.5 baths' -> 1.5)."
-    )
-
-    empty_columns = df.columns[df.isna().all()].tolist()
+    # bathrooms can be completely empty, but it is rebuilt from bathrooms_text below.
+    empty_columns = [
+        column for column in df.columns[df.isna().all()] if column != "bathrooms"
+    ]
     df = df.drop(columns=empty_columns)
     steps.append(
         f"Dropped {len(empty_columns)} completely empty columns, because they "
-        f"hold no information: {', '.join(empty_columns)}."
+        f"hold no information: {', '.join(empty_columns)}. bathrooms is kept, "
+        "because it is rebuilt from bathrooms_text."
     )
 
     rows_before = len(df)
@@ -93,8 +86,8 @@ def clean_dataset(dataframe: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
         df["price"].astype("string").str.replace(r"[$,]", "", regex=True)
     )
     steps.append(
-        "Converted price from text such as '$1,180.00' to a number. It is the "
-        "price per night in the local currency; the '$' is only formatting."
+        "Converted price from text such as '$1,180.00' to a number by removing "
+        "the '$' and the thousands commas."
     )
 
     rows_before = len(df)
@@ -106,35 +99,19 @@ def clean_dataset(dataframe: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
         "the next year, so they cannot be booked anyway."
     )
 
-    rows_before = len(df)
-    df = df.dropna(subset=["host_name"])
-    steps.append(
-        f"Dropped {rows_before - len(df):,} rows without any host information "
-        "(host name, superhost status and listing counts were all missing)."
-    )
-
     price_limit = df["price"].quantile(PRICE_UPPER_QUANTILE)
-    rows_before = len(df)
-    df = df[df["price"].le(price_limit)]
+    df["price_above_p99"] = df["price"].gt(price_limit)
     steps.append(
-        f"Removed {rows_before - len(df):,} outlier rows with a price above the "
-        f"{PRICE_UPPER_QUANTILE * 100:.0f}th percentile ({price_limit:,.2f}). This "
-        "removes placeholder prices that block bookings, but also some genuine "
-        "luxury listings."
+        f"Flagged {int(df['price_above_p99'].sum()):,} listings with a price above "
+        f"the {PRICE_UPPER_QUANTILE * 100:.0f}th percentile ({price_limit:,.2f}) in "
+        "price_above_p99. They are kept, because they may be genuine luxury listings."
     )
 
-    # Airbnb often leaves bedrooms empty for studios instead of recording 0.
-    studio = (
-        df["room_type"].eq("Entire home/apt")
-        & df["bedrooms"].isna()
-        & df["name"].str.contains("studio", case=False, na=False)
-    )
-    df.loc[studio, "bedrooms"] = 0
+    missing_bathrooms = int(df["bathrooms"].isna().sum())
+    df["bathrooms"] = df["bathrooms"].fillna(bathrooms_from_text(df["bathrooms_text"]))
     steps.append(
-        f"Set {int(studio.sum()):,} missing bedrooms to 0 for entire homes named "
-        "as a studio, because Airbnb often leaves bedrooms empty for studios. "
-        "Some hosts record their studio as 1 bedroom instead, so studios can "
-        "have either 0 or 1 bedrooms."
+        f"Filled {missing_bathrooms - int(df['bathrooms'].isna().sum()):,} missing "
+        "bathrooms from the number in bathrooms_text (e.g. '1.5 baths' -> 1.5)."
     )
 
     for column in ["bathrooms", "bedrooms", "beds"]:
@@ -146,11 +123,11 @@ def clean_dataset(dataframe: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
             "that accommodate the same number of guests."
         )
 
-    missing = int(df["reviews_per_month"].isna().sum())
-    df["reviews_per_month"] = df["reviews_per_month"].fillna(0)
+    no_reviews = df["number_of_reviews"].eq(0) & df["reviews_per_month"].isna()
+    df.loc[no_reviews, "reviews_per_month"] = 0
     steps.append(
-        f"Filled {missing:,} missing reviews_per_month with 0, because they "
-        "belong to listings with no reviews."
+        f"Filled {int(no_reviews.sum()):,} missing reviews_per_month with 0, only "
+        "for listings with no reviews."
     )
 
     df["has_reviews"] = df["number_of_reviews"].gt(0)
@@ -178,13 +155,6 @@ def clean_dataset(dataframe: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
         df[column] = df[column].round().astype("Int64")
     steps.append(
         "Stored counts such as bedrooms and beds as whole numbers (1, not 1.0)."
-    )
-
-    for column, value in TEXT_FILL_VALUES.items():
-        df[column] = df[column].fillna(value)
-    steps.append(
-        "Filled missing text: description and host_about with 'No description', "
-        "host_location and license with 'Unknown'."
     )
 
     return df, steps
@@ -218,7 +188,7 @@ def build_report(
         "-" * 80,
         *(f"{number}. {step}" for number, step in enumerate(steps, start=1)),
         "",
-        "Missing values by column, before and after",
+        "Missing values by column: before (all rows) and after (kept rows)",
         "-" * 80,
         missing.to_string(),
         "",
@@ -226,7 +196,9 @@ def build_report(
         "-" * 80,
         ", ".join(remaining) if remaining else "None",
         "These are left missing on purpose: first_review, last_review and the "
-        "review scores have no value when a listing has no reviews.",
+        "review scores have no value when a listing has no reviews, and text "
+        "columns such as description and host_about are not filled with made-up "
+        "text.",
         "",
     ]
     return "\n".join(sections)

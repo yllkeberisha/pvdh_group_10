@@ -22,7 +22,7 @@ python -m jupyter lab
 
 Hapni notebook-et sipas rendit dhe zgjidhni kernel-in e mjedisit `.venv`. Ato gjejnë automatikisht `dataset/` kur kernel-i nis nga rrënja e projektit ose nga dosja `notebooks/`. Notebook-u 02 krijon `dataset/listings_preprocessed.csv`, i cili përjashtohet nga Git. Dataset-i origjinal nuk ndryshohet.
 
-Skriptet ekzistuese në `scripts/` mbeten si rrjedhë alternative. Raporti i vjetër `reports/listings_cleaning.txt` u krijua nga një version tjetër i dataset-it (77,679 rreshta), ndaj **mos i përdorni numrat e tij** për versionin aktual me 91,954 rreshta. Për rezultatet e kësaj pjese përdorni notebook-et dhe `reports/preprocessing_summary.md`.
+Skriptet ekzistuese në `scripts/` mbeten si rrjedhë alternative dhe japin të njëjtin rezultat si notebook-et (59,905 rreshta pas pastrimit). Raporti `reports/listings_cleaning.txt` është rigjeneruar nga dataset-i aktual me 91,954 rreshta (Londër); një version i vjetër i tij vinte nga një dataset tjetër (77,679 rreshta). Për rezultatet e kësaj pjese përdorni notebook-et dhe `reports/preprocessing_summary.md`.
 
 ## Kufizime të metodës
 

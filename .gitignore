@@ -4,3 +4,7 @@ __pycache__/
 dataset/listings.csv*
 dataset/listings_clean.csv
 dataset/listings_preprocessed.csv
+dataset/listings_clean_full.csv
+dataset/listings_features.csv
+dataset/listings_model_ready.csv
+.ipynb_checkpoints/

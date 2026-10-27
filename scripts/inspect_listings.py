@@ -60,7 +60,7 @@ def build_report(dataset_path: Path, dataframe: pd.DataFrame) -> str:
     unique_counts = dataframe.nunique(dropna=False)
 
     sections = [
-        f"Initial dataset inspection: {dataset_path}",
+        f"Initial dataset inspection: {dataset_path.name}",
         "=" * 80,
         f"Rows: {len(dataframe):,}",
         f"Columns: {len(dataframe.columns):,}",

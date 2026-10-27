@@ -31,7 +31,7 @@ def parse_args() -> argparse.Namespace:
 
 def load_dataset(dataset_path: Path) -> pd.DataFrame:
     """Load a CSV; Pandas infers gzip compression from the .csv.gz suffix."""
-    return pd.read_csv(dataset_path, low_memory=False)
+    return pd.read_csv(dataset_path, low_memory=False, dtype={"host_profile_id": "string"})
 
 
 def build_report(dataset_path: Path, dataframe: pd.DataFrame) -> str:
@@ -47,6 +47,8 @@ def build_report(dataset_path: Path, dataframe: pd.DataFrame) -> str:
         int(missing_counts.eq(len(dataframe)).sum()) if len(dataframe) else 0
     )
     duplicate_rows = int(dataframe.duplicated().sum())
+    duplicate_ids = int(dataframe["id"].duplicated().sum()) if "id" in dataframe else 0
+    empty_column_names = dataframe.columns[missing_counts.eq(len(dataframe))].tolist()
     missing = pd.DataFrame(
         {
             "missing_count": missing_counts,
@@ -73,6 +75,11 @@ def build_report(dataset_path: Path, dataframe: pd.DataFrame) -> str:
         f"Columns with no missing values: {complete_columns:,}",
         f"Completely empty columns: {empty_columns:,}",
         f"Exact duplicate rows: {duplicate_rows:,}",
+        f"Duplicate listing IDs: {duplicate_ids:,}",
+        "",
+        "Completely empty column names",
+        "-" * 80,
+        ", ".join(empty_column_names) if empty_column_names else "None",
         "",
         "Column names and data types",
         "-" * 80,

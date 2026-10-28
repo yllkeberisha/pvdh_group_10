@@ -11,6 +11,7 @@ LOGGER = logging.getLogger(__name__)
 DEFAULT_OUTPUT = Path("dataset") / "listings_clean.csv"
 DEFAULT_REPORT = Path("reports") / "listings_cleaning.txt"
 PRICE_UPPER_QUANTILE = 0.99
+PRICE_DROP_QUANTILE = 0.999
 BOOLEAN_COLUMNS = [
     "host_is_superhost",
     "host_has_profile_pic",
@@ -52,6 +53,12 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def load_dataset(dataset_path: Path) -> pd.DataFrame:
+    """Load a CSV; Pandas infers gzip compression from the .csv.gz suffix."""
+    # As float64, host_profile_id (19 digits) would lose its last digits.
+    return pd.read_csv(dataset_path, low_memory=False, dtype={"host_profile_id": "Int64"})
+
+
 def bathrooms_from_text(bathrooms_text: pd.Series) -> pd.Series:
     """Read the number from text such as '1.5 shared baths'; 'Half-bath' is 0.5 and
     'No bathroom' is 0."""
@@ -91,12 +98,42 @@ def clean_dataset(dataframe: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     )
 
     rows_before = len(df)
+    unpriced = df["price"].isna()
+    unpriced_no_days = df.loc[unpriced, "availability_365"].eq(0).mean()
+    priced_no_days = df.loc[~unpriced, "availability_365"].eq(0).mean()
+    unpriced_previous = df.loc[unpriced, "source"].eq("previous scrape").mean()
     df = df.dropna(subset=["price"])
     steps.append(
         f"Dropped {rows_before - len(df):,} rows without a price. Price is the "
         "main variable for analysis, so filling it in would invent the values "
-        "we want to study. Most of these listings have no available days in "
-        "the next year, so they cannot be booked anyway."
+        f"we want to study. These listings are mostly not bookable: {unpriced_no_days:.0%} "
+        "have no available days in the next year (against "
+        f"{priced_no_days:.1%} of the listings with a price), and "
+        f"{unpriced_previous:.0%} have source = 'previous scrape'."
+    )
+
+    rows_before = len(df)
+    highest_price = df["price"].max()
+    drop_limits = df.groupby("room_type")["price"].quantile(PRICE_DROP_QUANTILE)
+    df = df[~df["price"].gt(df["room_type"].map(drop_limits))].copy()
+    steps.append(
+        f"Dropped {rows_before - len(df):,} rows with a price above the "
+        f"{PRICE_DROP_QUANTILE * 100:.1f}th percentile of their own room type "
+        f"({', '.join(f'{room} {limit:,.0f}' for room, limit in drop_limits.items())}; "
+        f"the highest price was {highest_price:,.0f}). A price that is normal for an "
+        "entire home can be an error for a single room. Prices this extreme distort "
+        "averages and scaling, so they are removed before the 99th-percentile flag below."
+    )
+
+    previous = df["source"].eq("previous scrape")
+    steps.append(
+        f"Kept {int(previous.sum()):,} listings with a price and source = "
+        f"'previous scrape' ({previous.mean():.1%} of the rows). Their median price is "
+        f"{df.loc[previous, 'price'].median():,.0f} against "
+        f"{df.loc[~previous, 'price'].median():,.0f} for the others, so nothing shows "
+        "their prices are wrong. They do have fewer available days (median "
+        f"{df.loc[previous, 'availability_365'].median():.0f} against "
+        f"{df.loc[~previous, 'availability_365'].median():.0f})."
     )
 
     price_limit = df["price"].quantile(PRICE_UPPER_QUANTILE)
@@ -146,9 +183,10 @@ def clean_dataset(dataframe: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     )
 
     for column in BOOLEAN_COLUMNS:
-        df[column] = df[column].eq("t")
+        df[column] = df[column].map({"t": True, "f": False}).astype("boolean")
     steps.append(
-        f"Converted the 't'/'f' columns to True/False: {', '.join(BOOLEAN_COLUMNS)}."
+        f"Converted the 't'/'f' columns to True/False: {', '.join(BOOLEAN_COLUMNS)}. "
+        "A missing value stays missing; it is not turned into False."
     )
 
     for column in INTEGER_COLUMNS:
@@ -160,21 +198,42 @@ def clean_dataset(dataframe: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     return df, steps
 
 
+def missing_action(column: str, original: pd.DataFrame, cleaned: pd.DataFrame) -> str:
+    """Say what cleaning did to a column that has missing values."""
+    if column not in cleaned:
+        return "column dropped"
+    before = original.loc[cleaned.index, column].isna().sum()
+    after = cleaned[column].isna().sum()
+    if after < before:
+        return "filled"
+    return "rows dropped" if before == 0 else "kept missing"
+
+
+def missing_value_table(original: pd.DataFrame, cleaned: pd.DataFrame) -> pd.DataFrame:
+    """One row per column with missing values: how many before and after cleaning,
+    and what cleaning did to it."""
+    missing_before = original.isna().sum()
+    missing_before = missing_before[missing_before.gt(0)]
+    return pd.DataFrame(
+        {
+            "missing_before": missing_before,
+            "missing_after": cleaned.isna().sum().reindex(missing_before.index),
+            "action": [
+                missing_action(column, original, cleaned)
+                for column in missing_before.index
+            ],
+        }
+    )
+
+
 def build_report(
     dataset_path: Path, original: pd.DataFrame, cleaned: pd.DataFrame, steps: list[str]
 ) -> str:
-    missing_before = original.isna().sum()
-    missing_before = missing_before[missing_before.gt(0)]
-    missing_after = cleaned.isna().sum().reindex(missing_before.index)
-    missing = pd.DataFrame(
-        {
-            "missing_before": missing_before.map("{:,}".format),
-            "missing_after": missing_after.map(
-                lambda value: "dropped" if pd.isna(value) else f"{int(value):,}"
-            ),
-        }
+    missing = missing_value_table(original, cleaned)
+    missing["missing_before"] = missing["missing_before"].map("{:,}".format)
+    missing["missing_after"] = missing["missing_after"].map(
+        lambda value: "dropped" if pd.isna(value) else f"{int(value):,}"
     )
-    remaining = cleaned.columns[cleaned.isna().any()].tolist()
 
     sections = [
         f"Cleaning and missing values: {dataset_path}",
@@ -192,13 +251,19 @@ def build_report(
         "-" * 80,
         missing.to_string(),
         "",
-        "Columns still with missing values",
+        "What the action means",
         "-" * 80,
-        ", ".join(remaining) if remaining else "None",
-        "These are left missing on purpose: first_review, last_review and the "
-        "review scores have no value when a listing has no reviews, and text "
-        "columns such as description and host_about are not filled with made-up "
-        "text.",
+        "column dropped: every row was empty. filled: see the steps above for how. "
+        "rows dropped: the gap was only in rows that were removed. kept missing: "
+        "left on purpose, for these reasons:",
+        "- first_review, last_review and the review scores: a listing with no "
+        "reviews has no date or score, and filling it in would give it one it "
+        "never got.",
+        "- description, host_location, host_about: free text, not filled with "
+        "made-up text.",
+        "- source: its only value is 'previous scrape'; it is a label.",
+        "- bathrooms_text, price_quote_* and the minimum/maximum nights columns: "
+        "small gaps that the price analysis does not need.",
         "",
     ]
     return "\n".join(sections)
@@ -220,10 +285,7 @@ def main() -> int:
         return 1
 
     try:
-        # As float64, host_profile_id (19 digits) would lose its last digits.
-        original = pd.read_csv(
-            dataset_path, low_memory=False, dtype={"host_profile_id": "Int64"}
-        )
+        original = load_dataset(dataset_path)
         cleaned, steps = clean_dataset(original)
         report = build_report(dataset_path, original, cleaned, steps)
         for path in (args.output, args.report):

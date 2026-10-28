@@ -217,7 +217,10 @@ def missing_value_table(original: pd.DataFrame, cleaned: pd.DataFrame) -> pd.Dat
     return pd.DataFrame(
         {
             "missing_before": missing_before,
-            "missing_after": cleaned.isna().sum().reindex(missing_before.index),
+            "missing_after": cleaned.isna()
+            .sum()
+            .reindex(missing_before.index)
+            .astype("Int64"),
             "action": [
                 missing_action(column, original, cleaned)
                 for column in missing_before.index

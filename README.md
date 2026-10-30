@@ -33,6 +33,16 @@ python -m jupyter lab
 
 Vendosni dataset-in origjinal te `dataset/listings.csv.gz` para ekzekutimit. Ky skedar nuk përfshihet në Git. Komandat përdorin rrugë relative nga rrënja e projektit.
 
+Notebook-u 02 integron edhe `reviews.csv.gz` dhe `calendar.csv.gz` të të njëjtit snapshot (Londër, 2026-09-17); pa to ai ndalon me një mesazh gabimi. Shkarkojini nga Inside Airbnb dhe vendosini te `dataset/` (`curl` është i disponueshëm edhe në Windows 10 e më të ri):
+
+```bash
+BASE=https://data.insideairbnb.com/united-kingdom/england/london/2026-09-17/data
+curl -L -o dataset/reviews.csv.gz  $BASE/reviews.csv.gz    # rreth 287 MB
+curl -L -o dataset/calendar.csv.gz $BASE/calendar.csv.gz   # rreth 82 MB
+```
+
+Edhe këta skedarë nuk përfshihen në Git: janë shumë të mëdhenj (GitHub nuk pranon skedarë mbi 100 MB), prandaj mbeten te `.gitignore`.
+
 Hapni notebook-et sipas rendit dhe zgjidhni kernel-in e mjedisit `.venv`. Ato gjejnë automatikisht `dataset/` kur kernel-i nis nga rrënja e projektit ose nga dosja `notebooks/`. Notebook-u 02 krijon `dataset/listings_preprocessed.csv`, i cili përjashtohet nga Git. Dataset-i origjinal nuk ndryshohet.
 
 Skriptet ekzistuese në `scripts/` mbeten si rrjedhë alternative dhe japin të njëjtin rezultat si notebook-et (59,905 rreshta pas pastrimit). Raporti `reports/listings_cleaning.txt` është rigjeneruar nga dataset-i aktual me 91,954 rreshta (Londër); një version i vjetër i tij vinte nga një dataset tjetër (77,679 rreshta). Për rezultatet e kësaj pjese përdorni notebook-et dhe `reports/preprocessing_summary.md`.

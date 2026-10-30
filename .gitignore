@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 dataset/listings.csv*
+dataset/reviews.csv*
+dataset/calendar.csv*
 dataset/listings_clean.csv
 dataset/listings_preprocessed.csv
 dataset/listings_clean_full.csv

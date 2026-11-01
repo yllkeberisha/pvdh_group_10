@@ -95,19 +95,19 @@ Për rrjedhën e plotë ekzekutoni **01 → 02 → 03 → 04** në këtë rend. 
 
 **Mostrimi sipas llojit të dhomës.** Notebook-u 01 krahason shpërndarjen e llojeve të dhomave në të dhënat origjinale dhe në mostrat e rastësishme, të shtresëzuara dhe sistematike.
 
-![Llojet e dhomave në të dhënat origjinale dhe në tri mostra](assets/mostrimi_sipas_llojit_te_dhomes.png)
+<img src="assets/mostrimi_sipas_llojit_te_dhomes.png" alt="Llojet e dhomave në të dhënat origjinale dhe në tri mostra" width="800">
 
 **Çmimi median sipas llojit të dhomës.** Pas pastrimit, çmimi median për `Entire home/apt` është 226.67, ndërsa për `Private room` është 80.00. Grafiku është nga notebook-u 02.
 
-![Çmimi median për natë sipas llojit të dhomës](assets/cmimi_sipas_llojit_te_dhomes.png)
+<img src="assets/cmimi_sipas_llojit_te_dhomes.png" alt="Çmimi median për natë sipas llojit të dhomës" width="800">
 
 **Pajisjet e listimeve.** Notebook-u 03 tregon sa shpesh shfaqen vetitë binare të krijuara nga lista e pajisjeve, si Wi-Fi, kuzhina dhe parkimi.
 
-![Përqindja e listimeve me secilën pajisje](assets/pajisjet_e_listimeve.png)
+<img src="assets/pajisjet_e_listimeve.png" alt="Përqindja e listimeve me secilën pajisje" width="800">
 
 **Reduktimi i dimensionit me PCA.** Nga 26 veti numerike, 11 komponentë shpjegojnë 82.77% të variacionit. Grafiku është nga notebook-u 04.
 
-![Varianca e shpjeguar nga komponentët PCA](assets/pca_varianca.png)
+<img src="assets/pca_varianca.png" alt="Varianca e shpjeguar nga komponentët PCA" width="800">
 
 ## Kufizime të metodës
 
